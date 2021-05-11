@@ -74,42 +74,18 @@ public class DeviceActivity extends AppCompatActivity {
                             .flatMapSingle(rxBleDeviceServices -> rxBleDeviceServices.getCharacteristic(characteristicUuidWrite))
                             .observeOn(AndroidSchedulers.mainThread())
                             .doOnSubscribe(disposable -> Snackbar.make(findViewById(android.R.id.content), "Connecting...", Snackbar.LENGTH_SHORT).show())
-//                            .doFinally(this::dispose)
                             .subscribe(bluetoothGattCharacteristic -> {
-                                        //;getPermissions();
-//                                        bluetoothGattCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-
-//                                        BluetoothGattCharacteristic
                                         Snackbar.make(findViewById(android.R.id.content), "Hey, connection has been established!", Snackbar.LENGTH_SHORT).show();
-//                                        int write_type = bluetoothGattCharacteristic.getWriteType();
-//                                        Snackbar.make(findViewById(android.R.id.content), String.valueOf(write_type), Snackbar.LENGTH_SHORT).show();
-
-//                                        Disposable subscribe = connectionObservable.flatMapSingle(
-//                                                rxBleConnection ->
-//                                                        rxBleConnection.writeCharacteristic(bluetoothGattCharacteristic, HexString.hexToBytes("03FFFF"))
-//                                        )
-//                                                .doOnComplete(() -> System.out.print("DUPA"))
-//                                                .subscribe(bytes ->
-//                                                        System.out.print(Arrays.toString(bytes)
-//                                                        ));
-//
-//                                        compositeDisposable.add(subscribe);
-
-
                                     },
                                     this::onConnectionFailure,
                                     this::onConnectionFinished
                             );
 
-//                            .subscribe(this::onConnectionReceived, this::onConnectionFailure);
-
             compositeDisposable.add(connectionDisposable);
 
 
             Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
-                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, "03FFFF" .getBytes());
-//                        .flatMap(ssidBytes -> rxBleConnection.writeCharacteristic(SSID2, mPassPhrase.getText().toString().getBytes())
-//                                .flatMap(ssid2Bytes -> rxBleConnection.writeCharacteristic(SSID3, mSecurityModeSpinner.getSelectedItem().toString().getBytes())));
+                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, "03FFFF".getBytes());
             })
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(ssid3Bytes -> {
@@ -117,7 +93,7 @@ public class DeviceActivity extends AppCompatActivity {
                         //do something
                     }, this::onWriteFailure, this::onWriteSuccess);
 
-
+            compositeDisposable.add(subscribe);
             // kopia
 //            connectionDisposable =// bleDevice.establishConnection(false)
 //                    connectionObservable
@@ -143,10 +119,10 @@ public class DeviceActivity extends AppCompatActivity {
             onScreenLogWrite(data);
 
             // use connectionObservable to write to IoT device
-            final Disposable disposable = connectionObservable
+            Disposable disposable = connectionObservable
 //                    .flatMapSingle(RxBleConnection::discoverServices)
-                    .firstOrError()
-                    .flatMap(rxBleConnection -> rxBleConnection.writeCharacteristic(characteristicUuidWrite, HexString.hexToBytes(data)))
+//                    .firstOrError()
+                    .flatMapSingle(rxBleConnection -> rxBleConnection.writeCharacteristic(characteristicUuidWrite, HexString.hexToBytes(data)))
 //                    .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
 //                    .ignoreElement()
@@ -157,6 +133,20 @@ public class DeviceActivity extends AppCompatActivity {
                     );
 
             compositeDisposable.add(disposable);
+
+
+//            Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
+//                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, "03FFFF" .getBytes());
+////                        .flatMap(ssidBytes -> rxBleConnection.writeCharacteristic(SSID2, mPassPhrase.getText().toString().getBytes())
+////                                .flatMap(ssid2Bytes -> rxBleConnection.writeCharacteristic(SSID3, mSecurityModeSpinner.getSelectedItem().toString().getBytes())));
+//            })
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribe(ssid3Bytes -> {
+//                        System.out.print("HAHAHAHAHAHA");
+//                        //do something
+//                    }, this::onWriteFailure, this::onWriteSuccess);
+//
+//            compositeDisposable.add(subscribe);
         }
     }
 
