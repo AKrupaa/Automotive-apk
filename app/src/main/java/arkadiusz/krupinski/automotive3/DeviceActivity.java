@@ -17,10 +17,12 @@ import com.polidea.rxandroidble2.RxBleDeviceServices;
 import java.util.Arrays;
 import java.util.UUID;
 
+import arkadiusz.krupinski.automotive3.Util.EngineValuesPWM;
 import arkadiusz.krupinski.automotive3.Util.HexString;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.github.controlwear.virtual.joystick.android.JoystickView;
 import io.reactivex.Completable;
 import io.reactivex.CompletableObserver;
 import io.reactivex.Observable;
@@ -30,6 +32,9 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
+
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
 
 public class DeviceActivity extends AppCompatActivity {
     private static final String TAG = "DeviceActivity";
@@ -64,6 +69,9 @@ public class DeviceActivity extends AppCompatActivity {
 
     @BindView(R.id.deviceStatus)
     TextView deviceStatus;
+
+    @BindView(R.id.joystick)
+    JoystickView joystickView;
 
     @OnClick(R.id.connectButton)
     public void onConnectButtonClick() {
@@ -124,7 +132,7 @@ public class DeviceActivity extends AppCompatActivity {
             onScreenLogWrite(data);
 
             Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
-                this.rxBleConnection = rxBleConnection;
+//                this.rxBleConnection = rxBleConnection;
                 return rxBleConnection.writeCharacteristic(characteristicUuidWrite, "03FFFF" .getBytes());
             })
                     .observeOn(AndroidSchedulers.mainThread())
@@ -171,6 +179,45 @@ public class DeviceActivity extends AppCompatActivity {
                 .subscribe(this::onConnectionStateChange);
 
         compositeDisposable.add(stateDisposable);
+
+        // joystick
+
+        joystickView.setOnMoveListener((angle, strength) -> {
+            double nJoyX = strength * cos(angle * Math.PI / 180);
+            double nJoyY = strength * sin(angle * Math.PI / 180);
+            EngineValuesPWM engineValuesPWM = new EngineValuesPWM(nJoyX, nJoyY);
+            engineValuesPWM.calulcate();
+
+            byte left = engineValuesPWM.getLeft();
+            byte right = engineValuesPWM.getRight();
+
+            writeToDevice(new byte[]{0x03, left, right});
+        }, 2000);
+
+    }
+
+    private void writeToDevice(byte[] bytes) {
+        if (isConnected()) {
+            triggerDisconnect();
+//            String l = Integer.toHexString(100);
+//            String r = Integer.toHexString(100);
+//            String movement = "03";
+//            String data = movement + l + r;
+//            onScreenLogWrite(data);
+
+            Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
+                this.rxBleConnection = rxBleConnection;
+                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, bytes);
+            })
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(ssid3Bytes -> {
+                        ;
+//                        System.out.print("This is working");
+                        //do something
+                    }, this::onWriteFailure, this::onWriteSuccess);
+
+            compositeDisposable.add(subscribe);
+        }
     }
 
     private void onConnectionStateChange(RxBleConnection.RxBleConnectionState newState) {
@@ -198,16 +245,19 @@ public class DeviceActivity extends AppCompatActivity {
     private void onConnectionReceived(RxBleConnection connection) {
         //noinspection ConstantConditions
         Snackbar.make(findViewById(android.R.id.content), "Connection received", Snackbar.LENGTH_SHORT).show();
+        Log.e(TAG, "Connection received " + connection.toString());
     }
 
     private void onWriteSuccess() {
         //noinspection ConstantConditions
         Snackbar.make(findViewById(android.R.id.content), "Write success", Snackbar.LENGTH_SHORT).show();
+        Log.i(TAG, "Write success");
     }
 
     private void onWriteFailure(Throwable throwable) {
         //noinspection ConstantConditions
         Snackbar.make(findViewById(android.R.id.content), "Write error: " + throwable, Snackbar.LENGTH_SHORT).show();
+        Log.e(TAG, "Write error", throwable);
     }
 
     private void onScreenLogWrite(String s) {
