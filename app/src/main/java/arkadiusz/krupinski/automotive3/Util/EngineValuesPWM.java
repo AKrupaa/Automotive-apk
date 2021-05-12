@@ -11,7 +11,7 @@ public class EngineValuesPWM {
     private double nMotMixR;           // Motor (right) mixed output           (-128..+127)
 
 
-    private double fPivYLimit = 32.0;
+    private double fPivYLimit = 50.0;
 
     // TEMP VARIABLES
     private double nMotPremixL;    // Motor (left)  premixed output        (-128..+127)
@@ -61,11 +61,39 @@ public class EngineValuesPWM {
     }
 
     public byte getRight() {
-        return (byte)nMotMixL;
+        return (byte) nMotMixL;
     }
 
     public byte getLeft() {
-        return (byte)nMotMixR;
+        return (byte) nMotMixR;
+    }
+
+    public byte getRightU2() {
+        byte u2 = 0;
+
+        if (nMotMixR >= 0) {
+            u2 = (byte) nMotMixR;
+        } else {
+            u2 = (byte) Math.abs(nMotMixR);
+            u2 = (byte) ~u2;
+            u2 += 1;
+        }
+
+        return u2;
+    }
+
+    public byte getLeftU2() {
+        byte u2 = 0;
+
+        if (nMotMixL >= 0) {
+            u2 = (byte) nMotMixL;
+        } else {
+            u2 = (byte) Math.abs(nMotMixL);
+            u2 = (byte) ~u2;
+            u2 += 1;
+        }
+
+        return u2;
     }
 
     public String getHexLeftValue() {

@@ -79,44 +79,19 @@ public class DeviceActivity extends AppCompatActivity {
             triggerDisconnect();
         } else {
 
-//            Disposable connectionDisposable =// bleDevice.establishConnection(false)
-//                    connectionObservable
-//                            .flatMapSingle(RxBleConnection::discoverServices)
-//                            .flatMapSingle(rxBleDeviceServices -> rxBleDeviceServices.getCharacteristic(characteristicUuidWrite))
-//                            .observeOn(AndroidSchedulers.mainThread())
-//                            .doOnSubscribe(disposable -> Snackbar.make(findViewById(android.R.id.content), "Connecting...", Snackbar.LENGTH_SHORT).show())
-//                            .subscribe(bluetoothGattCharacteristic -> {
-//                                        Snackbar.make(findViewById(android.R.id.content), "Hey, connection has been established!", Snackbar.LENGTH_SHORT).show();
-//                                    },
-//                                    this::onConnectionFailure,
-//                                    this::onConnectionFinished
-//                            );
-//
-//            compositeDisposable.add(connectionDisposable);
-
-
             Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
                 this.rxBleConnection = rxBleConnection;
-                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, "03FFFF" .getBytes());
+                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, new byte[]{0x01, 0x01, 0x01});
             })
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(ssid3Bytes -> {
-                        System.out.print("This is working");
+//                        System.out.print("This is working");
                         //do something
+                        Snackbar.make(findViewById(android.R.id.content), "Connection established!", Snackbar.LENGTH_SHORT).show();
                     }, this::onWriteFailure, this::onWriteSuccess);
 
             compositeDisposable.add(subscribe);
-
-            // kopia
-//            connectionDisposable =// bleDevice.establishConnection(false)
-//                    connectionObservable
-//                            .observeOn(AndroidSchedulers.mainThread())
-//                            .doFinally(this::dispose)
-//                            .subscribe(this::onConnectionReceived, this::onConnectionFailure);
-//
-//            compositeDisposable.add(connectionDisposable);
-            // koniec kopii
         }
     }
 
@@ -125,25 +100,20 @@ public class DeviceActivity extends AppCompatActivity {
     public void onWriteButtonClick() {
 
         if (isConnected()) {
-            triggerDisconnect();
-            String l = Integer.toHexString(100);
-            String r = Integer.toHexString(100);
-            String movement = "03";
-            String data = movement + l + r;
-            onScreenLogWrite(data);
+//            triggerDisconnect();
+//            writeToDevice(new byte[]{0x02, 0x01, 0x01});
+            int percent = -15;
+            byte u2 = 0;
+            if (percent >= 0) {
+                u2 = (byte) percent;
+            } else {
+                u2 = (byte) Math.abs(percent);
+                u2 = (byte) ~u2;
+                u2 += 1;
+            }
 
-            Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
-//                this.rxBleConnection = rxBleConnection;
-                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, "03FFFF" .getBytes());
-            })
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(ssid3Bytes -> {
-                        System.out.print("This is working");
-                        //do something
-                    }, this::onWriteFailure, this::onWriteSuccess);
-
-            compositeDisposable.add(subscribe);
+            // czyli 30% lewy w druga strone oraz 30% prawy
+            writeToDevice(new byte[]{0x03, u2, u2});
         }
     }
 
@@ -171,10 +141,6 @@ public class DeviceActivity extends AppCompatActivity {
                 .share();
 //                .compose(ReplayingShare.instance());
 
-//        Disposable subscribe = connectionObservable.subscribe(rxBleConnection1 -> {
-//            this.rxBleConnection = rxBleConnection1;
-//        });
-
         // observe connection status
         stateDisposable = bleDevice.observeConnectionStateChanges()
                 .observeOn(AndroidSchedulers.mainThread())
@@ -190,8 +156,11 @@ public class DeviceActivity extends AppCompatActivity {
             EngineValuesPWM engineValuesPWM = new EngineValuesPWM(nJoyX, nJoyY);
             engineValuesPWM.calulcate();
 
-            byte left = engineValuesPWM.getLeft();
-            byte right = engineValuesPWM.getRight();
+//            byte left = engineValuesPWM.getLeft();
+//            byte right = engineValuesPWM.getRight();
+
+            byte left = engineValuesPWM.getLeftU2();
+            byte right = engineValuesPWM.getRightU2();
 
             writeToDevice(new byte[]{0x03, left, right});
         }, 20);
@@ -200,31 +169,14 @@ public class DeviceActivity extends AppCompatActivity {
 
     private void writeToDevice(byte[] bytes) {
         if (isConnected()) {
-//            triggerDisconnect();
-//            String l = Integer.toHexString(100);
-//            String r = Integer.toHexString(100);
-//            String movement = "03";
-//            String data = movement + l + r;
-//            onScreenLogWrite(data);
-
-//            Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
-////                this.rxBleConnection = rxBleConnection;
-//                Log.i(TAG, "RSSI: " + rxBleConnection.readRssi());
-//                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, bytes);
-//            })
-//                    .observeOn(AndroidSchedulers.mainThread())
-//                    .subscribe(ssid3Bytes -> {
-//                        ;
-////                        System.out.print("This is working");
-//                        //do something
-//                    }, this::onWriteFailure, this::onWriteSuccess);
-//
-//            compositeDisposable.add(subscribe);
 
             compositeDisposable.add(rxBleConnection.writeCharacteristic(characteristicUuidWrite, bytes)
                     .observeOn(Schedulers.io())
                     .subscribeOn(AndroidSchedulers.mainThread())
-                    .subscribe(written -> Log.i(TAG, "bytes written")/* do sth with bytes */, this::onWriteFailure));
+                    .subscribe(written -> {
+                        Log.i(TAG, "bytes written");
+                        Log.i(TAG, "sent bytes: " + HexString.bytesToHex(written));
+                    }/* do sth with bytes */, this::onWriteFailure));
         }
     }
 
