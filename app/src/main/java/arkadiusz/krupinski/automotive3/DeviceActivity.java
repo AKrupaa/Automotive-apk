@@ -206,7 +206,8 @@ public class DeviceActivity extends AppCompatActivity {
 //            onScreenLogWrite(data);
 
             Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
-                this.rxBleConnection = rxBleConnection;
+//                this.rxBleConnection = rxBleConnection;
+                Log.i(TAG, "RSSI: " + rxBleConnection.readRssi());
                 return rxBleConnection.writeCharacteristic(characteristicUuidWrite, bytes);
             })
                     .observeOn(AndroidSchedulers.mainThread())
