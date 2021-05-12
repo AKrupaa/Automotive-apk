@@ -99,6 +99,7 @@ public class DeviceActivity extends AppCompatActivity {
                 this.rxBleConnection = rxBleConnection;
                 return rxBleConnection.writeCharacteristic(characteristicUuidWrite, "03FFFF" .getBytes());
             })
+                    .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(ssid3Bytes -> {
                         System.out.print("This is working");
@@ -136,6 +137,7 @@ public class DeviceActivity extends AppCompatActivity {
                 return rxBleConnection.writeCharacteristic(characteristicUuidWrite, "03FFFF" .getBytes());
             })
                     .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.io())
                     .subscribe(ssid3Bytes -> {
                         System.out.print("This is working");
                         //do something
@@ -192,32 +194,37 @@ public class DeviceActivity extends AppCompatActivity {
             byte right = engineValuesPWM.getRight();
 
             writeToDevice(new byte[]{0x03, left, right});
-        }, 2000);
+        }, 20);
 
     }
 
     private void writeToDevice(byte[] bytes) {
         if (isConnected()) {
-            triggerDisconnect();
+//            triggerDisconnect();
 //            String l = Integer.toHexString(100);
 //            String r = Integer.toHexString(100);
 //            String movement = "03";
 //            String data = movement + l + r;
 //            onScreenLogWrite(data);
 
-            Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
-//                this.rxBleConnection = rxBleConnection;
-                Log.i(TAG, "RSSI: " + rxBleConnection.readRssi());
-                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, bytes);
-            })
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(ssid3Bytes -> {
-                        ;
-//                        System.out.print("This is working");
-                        //do something
-                    }, this::onWriteFailure, this::onWriteSuccess);
+//            Disposable subscribe = connectionObservable.flatMapSingle(rxBleConnection -> {
+////                this.rxBleConnection = rxBleConnection;
+//                Log.i(TAG, "RSSI: " + rxBleConnection.readRssi());
+//                return rxBleConnection.writeCharacteristic(characteristicUuidWrite, bytes);
+//            })
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribe(ssid3Bytes -> {
+//                        ;
+////                        System.out.print("This is working");
+//                        //do something
+//                    }, this::onWriteFailure, this::onWriteSuccess);
+//
+//            compositeDisposable.add(subscribe);
 
-            compositeDisposable.add(subscribe);
+            compositeDisposable.add(rxBleConnection.writeCharacteristic(characteristicUuidWrite, bytes)
+                    .observeOn(Schedulers.io())
+                    .subscribeOn(AndroidSchedulers.mainThread())
+                    .subscribe(written -> Log.i(TAG, "bytes written")/* do sth with bytes */, this::onWriteFailure));
         }
     }
 
@@ -279,5 +286,7 @@ public class DeviceActivity extends AppCompatActivity {
         compositeDisposable.clear();
 
         connectButton.setText(R.string.connect);
+        Snackbar.make(findViewById(android.R.id.content), "Disconnection triggered", Snackbar.LENGTH_SHORT).show();
+        Log.e(TAG, "Disconnection triggered");
     }
 }
