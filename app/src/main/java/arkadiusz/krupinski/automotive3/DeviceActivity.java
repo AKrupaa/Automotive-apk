@@ -16,6 +16,7 @@ import com.polidea.rxandroidble2.RxBleDeviceServices;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import arkadiusz.krupinski.automotive3.Util.EngineValuesPWM;
 import arkadiusz.krupinski.automotive3.Util.HexString;
@@ -47,6 +48,7 @@ public class DeviceActivity extends AppCompatActivity {
     public static final String UUID_SERVICE = "00001234-0000-1000-8000-00805F9B34FB";
     public static final String UUID_CHARACTERISTIC_WRITE = "00001235-0000-1000-8000-00805F9B34FB";
     public static final String UUID_CHARACTERISTIC_NOTIFY = "00001236-0000-1000-8000-00805F9B34FB";
+
 
     private UUID serviceDeviceNameUUID;
     private UUID characteristicUuidDeviceName;
@@ -113,7 +115,25 @@ public class DeviceActivity extends AppCompatActivity {
             }
 
             // czyli 30% lewy w druga strone oraz 30% prawy
-            writeToDevice(new byte[]{0x03, u2, u2});
+//            writeToDevice(new byte[]{0x03, u2, u2});
+
+            Disposable subscribe1 = rxBleConnection.setupNotification(UUID.fromString(UUID_CHARACTERISTIC_NOTIFY))
+                    .doOnNext(observable -> {
+                        // notification has been set up
+                        onNotificationSet("It works!");
+                    })
+                    .flatMap(observable -> observable)
+                    .subscribe(
+                            bytes -> {
+                                // given characteristic has been changes, here is the value
+                                onNotificationChange(bytes);
+                            },
+                            throwable -> {
+                                onNotificationFailure(throwable);
+                            }
+                    );
+
+            compositeDisposable.add(subscribe1);
         }
     }
 
@@ -218,6 +238,21 @@ public class DeviceActivity extends AppCompatActivity {
         //noinspection ConstantConditions
         Snackbar.make(findViewById(android.R.id.content), "Write error: " + throwable, Snackbar.LENGTH_SHORT).show();
         Log.e(TAG, "Write error", throwable);
+    }
+
+    private void onNotificationSet(String text) {
+        Snackbar.make(findViewById(android.R.id.content), "Notification set: " + text, Snackbar.LENGTH_SHORT).show();
+        Log.e(TAG, "Notification has been set:" + text);
+    }
+
+    private void onNotificationChange(byte[] bytes) {
+        Snackbar.make(findViewById(android.R.id.content), "Notification change: " + HexString.bytesToHex(bytes), Snackbar.LENGTH_SHORT).show();
+        Log.e(TAG, "Given characteristic has been changes, here is the value." + HexString.bytesToHex(bytes));
+    }
+
+    private void onNotificationFailure(Throwable throwable) {
+        Snackbar.make(findViewById(android.R.id.content), "Notification error: " + throwable, Snackbar.LENGTH_SHORT).show();
+        Log.e(TAG, "Notification error", throwable);
     }
 
     private void onScreenLogWrite(String s) {
