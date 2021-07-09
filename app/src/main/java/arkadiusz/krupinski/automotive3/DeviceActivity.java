@@ -3,17 +3,42 @@ package arkadiusz.krupinski.automotive3;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.content.Context;
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.MediaController;
 import android.widget.TextView;
+import android.widget.VideoView;
 
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.source.BehindLiveWindowException;
+import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.ProgressiveMediaSource;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.ui.PlayerView;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.util.Util;
 import com.google.android.material.snackbar.Snackbar;
 import com.jakewharton.rx3.ReplayingShare;
 import com.polidea.rxandroidble2.RxBleConnection;
 import com.polidea.rxandroidble2.RxBleDevice;
 import com.polidea.rxandroidble2.RxBleDeviceServices;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +62,7 @@ import io.reactivex.subjects.PublishSubject;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
 
-public class DeviceActivity extends AppCompatActivity {
+public class DeviceActivity extends AppCompatActivity implements Player.EventListener {
     private static final String TAG = "DeviceActivity";
 
     public static final String EXTRA_MAC_ADDRESS = "extra_mac_address";
@@ -63,6 +88,8 @@ public class DeviceActivity extends AppCompatActivity {
     private final CompositeDisposable compositeDisposable = new CompositeDisposable();
     private RxBleConnection rxBleConnection;
 
+    SimpleExoPlayer player;
+
     @BindView(R.id.connectButton)
     Button connectButton;
 
@@ -74,6 +101,9 @@ public class DeviceActivity extends AppCompatActivity {
 
     @BindView(R.id.joystick)
     JoystickView joystickView;
+
+//    @BindView(R.id.exo_player_view)
+//    PlayerView playerView;
 
     @OnClick(R.id.connectButton)
     public void onConnectButtonClick() {
@@ -185,6 +215,114 @@ public class DeviceActivity extends AppCompatActivity {
             writeToDevice(new byte[]{0x03, left, right});
         }, 20);
 
+
+        // player
+//        initializePlayer();
+    }
+
+
+    public void initializePlayer() {
+        // Global settings.
+//        player =
+//                new SimpleExoPlayer.Builder(this)
+//                        .setMediaSourceFactory(
+//                                new DefaultMediaSourceFactory(this).setLiveTargetOffsetMs(5000))
+//                        .build();
+//
+//        playerView.setPlayer(player);
+//
+        Uri uri = Uri.parse("http://192.168.4.1/");
+//
+        // Per MediaItem settings.
+//        MediaItem mediaItem =
+//                new MediaItem.Builder()
+//                        .setUri(uri)
+//                        .setLiveMaxPlaybackSpeed(1.02f)
+//                        .build();
+//        player.setMediaItem(mediaItem);
+
+        // --------------------------------------------------------
+
+        // Create a data source factory.
+//        DataSource.Factory dataSourceFactory = new DefaultHttpDataSourceFactory();
+//// Create a progressive media source pointing to a stream uri.
+//        MediaSource mediaSource = new ProgressiveMediaSource.Factory(dataSourceFactory)
+//                .createMediaSource(MediaItem.fromUri(uri));
+//// Create a player instance.
+//        SimpleExoPlayer player = new SimpleExoPlayer.Builder(this).build();
+//// Set the media source to be played.
+//        player.setMediaSource(mediaSource);
+//// Prepare the player.
+//        player.prepare();
+//        playerView.setPlayer(player);
+//        player.setPlayWhenReady(true);
+//        Uri myUri = Uri.parse("http://192.168.4.1/"); // initialize Uri here
+//        String url = "http://192.168.4.1/"; // your URL here
+//        MediaPlayer mediaPlayer = new MediaPlayer();
+//        // ... other initialization here ...
+//        mediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
+//
+//
+//        WifiManager.WifiLock wifiLock = ((WifiManager) getSystemService(Context.WIFI_SERVICE))
+//                .createWifiLock(WifiManager.WIFI_MODE_FULL, "mylock");
+//
+//        wifiLock.acquire();
+//        mediaPlayer.setAudioAttributes(
+//                new AudioAttributes.Builder()
+//                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+//                        .setUsage(AudioAttributes.USAGE_MEDIA)
+//                        .build()
+//        );
+//        try {
+//            mediaPlayer.setDataSource(url);
+//            mediaPlayer.setOnPreparedListener(this::onPrepared);
+//            mediaPlayer.prepareAsync();
+////            mediaPlayer.prepare(); // might take long! (for buffering, etc)
+//        } catch (IOException ioException) {
+//            ioException.printStackTrace();
+//        }
+//        mediaPlayer.start();
+
+//        VideoView videoView = (VideoView)findViewById(R.id.video_view);
+//        MediaController mediaController= new MediaController(this);
+//        mediaController.setAnchorView(videoView);
+//        Uri uri = Uri.parse("http://home/video.mp4");
+//        videoView.setMediaController(mediaController);
+//        videoView.setVideoURI(uri);
+//        videoView.requestFocus();
+//        videoView.start();
+
+    }
+
+//    public void onPrepared(MediaPlayer player) {
+//        player.start();
+//    }
+
+    @Override
+    public void onPlayerError(ExoPlaybackException e) {
+        if (isBehindLiveWindow(e)) {
+            // Re-initialize player at the current live window default position.
+            player.seekToDefaultPosition();
+            player.prepare();
+            Log.e(TAG, "onPlayerError");
+        } else {
+            // Handle other errors.
+            Log.e(TAG, "onPlayerError (else)");
+        }
+    }
+
+    private static boolean isBehindLiveWindow(ExoPlaybackException e) {
+        if (e.type != ExoPlaybackException.TYPE_SOURCE) {
+            return false;
+        }
+        Throwable cause = e.getSourceException();
+        while (cause != null) {
+            if (cause instanceof BehindLiveWindowException) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     private void writeToDevice(byte[] bytes) {

@@ -58,9 +58,12 @@ dependencies {
 //    implementation project(':exoplayer-library-dash')
 //    implementation project(':exoplayer-library-ui')
     // https://mvnrepository.com/artifact/com.google.android.exoplayer/extension-rtmp
-    implementation group: 'com.google.android.exoplayer', name: 'extension-rtmp', version: '2.13.2'
+//    implementation group: 'com.google.android.exoplayer', name: 'extension-rtmp', version: '2.13.2'
 //    implementation 'com.google.android.exoplayer:exoplayer-dash:2.13.2'
     implementation "com.polidea.rxandroidble2:rxandroidble:1.11.1"
     implementation 'com.jakewharton:butterknife:10.2.3'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.2.3'
+
+    // https://mvnrepository.com/artifact/com.google.android.exoplayer/exoplayer
+    implementation group: 'com.google.android.exoplayer', name: 'exoplayer', version: '2.13.2'
 }
