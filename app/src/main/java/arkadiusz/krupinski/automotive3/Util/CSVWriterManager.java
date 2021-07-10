@@ -27,11 +27,11 @@ public class CSVWriterManager {
 
     public void createFile(String filename) throws IOException {
         // check if permitted to do some actions
-        if (ContextCompat.checkSelfPermission(
-                context.getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-                PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
+//        if (ContextCompat.checkSelfPermission(
+//                context.getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+//                PackageManager.PERMISSION_GRANTED) {
+//            return;
+//        }
 
         File pathfile = new File(context.getExternalFilesDir(null).getAbsolutePath() + "/csv");
 
@@ -53,11 +53,11 @@ public class CSVWriterManager {
 
     public void csvWriterOneByOne(List<String[]> stringArray) throws Exception {
         // check if permitted to do some actions
-        if (ContextCompat.checkSelfPermission(
-                context.getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-                PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
+//        if (ContextCompat.checkSelfPermission(
+//                context.getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+//                PackageManager.PERMISSION_GRANTED) {
+//            return;
+//        }
 
         CSVWriter writer = new CSVWriter(new FileWriter(this.path.toString()));
         for (String[] array : stringArray) {

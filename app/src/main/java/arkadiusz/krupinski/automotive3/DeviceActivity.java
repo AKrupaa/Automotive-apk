@@ -12,8 +12,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.MediaController;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.VideoView;
 
@@ -70,7 +74,7 @@ import io.reactivex.subjects.PublishSubject;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
 
-public class DeviceActivity extends AppCompatActivity implements Player.EventListener {
+public class DeviceActivity extends AppCompatActivity implements Player.EventListener, AdapterView.OnItemSelectedListener {
     private static final String TAG = "DeviceActivity";
 
     public static final String LOG_FILENAME = "logs";
@@ -91,6 +95,9 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     public static final byte BLE_TRANSMIT_X = 0x05;
     public static final byte BLE_TRANSMIT_Y = 0x06;
     public static final byte BLE_TRANSMIT_Z = 0x07;
+    public static final byte BLE_TRANSMIT_ULTRASOUND = 0x08;
+    public static final byte BLE_ULTRASOUND_CONFIG = 0x09;
+    public static final byte BLE_TRANSMIT_ULTRASOUND_VALUE = 0x0A;
 
     private UUID serviceDeviceNameUUID;
     private UUID characteristicUuidDeviceName;
@@ -123,6 +130,12 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
 
     @BindView(R.id.exo_player_view)
     PlayerView playerView;
+
+    @BindView(R.id.spinner)
+    Spinner distancesSpiner;
+
+    @BindView(R.id.distance_ultrasound)
+    TextView distanceTextView;
 
     @OnClick(R.id.connectButton)
     public void onConnectButtonClick() {
@@ -262,6 +275,16 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
             e.printStackTrace();
         }
 
+        // create spinner
+
+        distancesSpiner.setOnItemSelectedListener(this);
+        // Create an ArrayAdapter using the string array and a default spinner layout
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.ultrasound_distances, android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Apply the adapter to the spinner
+        distancesSpiner.setAdapter(adapter);
     }
 
 
@@ -279,24 +302,26 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
 ////
         Uri uri = Uri.parse("rtsp://192.168.1.1:8554/mjpeg/1");
 ////
+        // Create a player instance.
+        player = new SimpleExoPlayer.Builder(this).build();
 ////         Per MediaItem settings.
-//        MediaItem mediaItem =
-//                new MediaItem.Builder()
-//                        .setUri(uri)
-//                        .setLiveMaxPlaybackSpeed(1.03f)
-//                        .setLiveMaxOffsetMs(10)
-//                        .build();
-//        player.setMediaItem(mediaItem);
+        MediaItem mediaItem =
+                new MediaItem.Builder()
+                        .setUri(uri)
+                        .setLiveMaxPlaybackSpeed(1.03f)
+                        .setLiveMaxOffsetMs(1000)
+                        .build();
+        player.setMediaItem(mediaItem);
 
 
         // Create an RTSP media source pointing to an RTSP uri.
-        MediaSource mediaSource =
-                new RtspMediaSource.Factory()
-                        .createMediaSource(MediaItem.fromUri(uri));
-// Create a player instance.
-        player = new SimpleExoPlayer.Builder(this).build();
+//        MediaSource mediaSource =
+//                new RtspMediaSource.Factory()
+//                        .createMediaSource(MediaItem.fromUri(uri));
+
+
 // Set the media source to be played.
-        player.setMediaSource(mediaSource);
+//        player.setMediaSource(mediaSource);
 // Prepare the player.
         player.prepare();
 
@@ -445,78 +470,97 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
 
     private void onNotificationChange(byte[] bytes) {
         Snackbar.make(findViewById(android.R.id.content), "Notification change: " + HexString.bytesToHex(bytes), Snackbar.LENGTH_SHORT).show();
-        Log.e(TAG, "Given characteristic has been changes, here is the value." + HexString.bytesToHex(bytes));
+        Log.e(TAG, "Given characteristic has been changes, here is the value: " + HexString.bytesToHex(bytes));
 
-        //TODO: przetestować reagowanie na przysylane dane...
+        if (bytes.length < 3) {
 
+            bytes = new byte[]{bytes[0], bytes[1], 0x00};
 
-        // WRITE TO CSV file
-        try {
-            csvWriterManager.createFile(LOG_FILENAME);
-            Date date = new Date(System.currentTimeMillis());
-
-//            String[] columns = String.format("%s,%s,%s,%s", "timestamp", "X", "Y", "Z", "Temperature").split(",");
-
-            Integer X = null, Y = null, Z = null, temperature = null;
-
-            byte[] data = {bytes[1], bytes[2]};
-            ByteBuffer wrapped;
-            boolean isNegative = false;
-
-            switch (bytes[0]) {
-                case BLE_TRANSMIT_TEMPERATURE:
-
-                    // 12bit ADC
-                    if (((bytes[1] & 0xFF) & (1 << 4)) == (1 << 4)) {
-                        isNegative = true;
-                    }
-
-                    wrapped = ByteBuffer.wrap(data);
-                    temperature = wrapped.getInt();
-                    temperature /= 2 ^ 12 - 1; // resolution 12 bit ADC (STM32L162RDTX)
-
-                    if (isNegative)
-                        temperature -= 2 ^ 12 - 1; // this is used for coverting U2 to INT (not tested yet)
-
-                    break;
-                case BLE_TRANSMIT_X:
-
-                    wrapped = ByteBuffer.wrap(data);
-                    X = wrapped.getInt();
-
-                    break;
-                case BLE_TRANSMIT_Y:
-
-                    wrapped = ByteBuffer.wrap(data);
-                    Y = wrapped.getInt();
-
-                    break;
-                case BLE_TRANSMIT_Z:
-
-                    wrapped = ByteBuffer.wrap(data);
-                    Z = wrapped.getInt();
-                    break;
-            }
-
-
-            /*
-            byte[] arr = { 0x00, 0x01 };
-            ByteBuffer wrapped = ByteBuffer.wrap(arr); // big-endian by default
-            short num = wrapped.getShort(); // 1
-
-            ByteBuffer dbuf = ByteBuffer.allocate(2);
-            dbuf.putShort(num);
-            byte[] bytes = dbuf.array(); // { 0, 1 }
-             */
-
-            String[] entry = String.format(Locale.getDefault(), "%s,%d,%d,%d,%d", date.toString(), X, Y, Z, temperature).split(",");
-
-            csvWriterManager.csvWriterOnce(entry);
-        } catch (IOException ioException) {
-            ioException.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
+//            bytes[2] = bytes[1];
+//            bytes[1] = 0x00;
         }
+
+        if (bytes[0] == BLE_TRANSMIT_ULTRASOUND_VALUE && bytes.length == 3) {
+            byte[] data = {bytes[2], bytes[1]};
+            String bytesToHex = HexString.bytesToHex(data);
+            int decimal = Integer.parseInt(bytesToHex, 16);
+
+//            ((ULTRASOUND_DIST_15CM) / TIMER_10_RESOLUTION * 2)
+            double result = decimal * 0.125 * 0.0344 / 2; // timer result * 2 * timer resolution * speed of sound in cm/us
+            distanceTextView.setText(String.format(Locale.getDefault(), "Distance = %.2f cm", result));
+        }
+
+
+//        //TODO: przetestować reagowanie na przysylane dane...
+//
+//
+//        // WRITE TO CSV file
+////        try {
+////            csvWriterManager.createFile(LOG_FILENAME);
+//            Date date = new Date(System.currentTimeMillis());
+//
+////            String[] columns = String.format("%s,%s,%s,%s", "timestamp", "X", "Y", "Z", "Temperature").split(",");
+//
+//            Integer X = null, Y = null, Z = null, temperature = null;
+//
+//            byte[] data = {bytes[1], bytes[2]};
+//            ByteBuffer wrapped;
+//            boolean isNegative = false;
+//
+//            switch (bytes[0]) {
+//                case BLE_TRANSMIT_TEMPERATURE:
+//
+//                    // 12bit ADC
+//                    if (((bytes[1] & 0xFF) & (1 << 4)) == (1 << 4)) {
+//                        isNegative = true;
+//                    }
+//
+//                    wrapped = ByteBuffer.wrap(data);
+//                    temperature = wrapped.getInt();
+//                    temperature /= 2 ^ 12 - 1; // resolution 12 bit ADC (STM32L162RDTX)
+//
+//                    if (isNegative)
+//                        temperature -= 2 ^ 12 - 1; // this is used for coverting U2 to INT (not tested yet)
+//
+//                    break;
+//                case BLE_TRANSMIT_X:
+//
+//                    wrapped = ByteBuffer.wrap(data);
+//                    X = wrapped.getInt();
+//
+//                    break;
+//                case BLE_TRANSMIT_Y:
+//
+//                    wrapped = ByteBuffer.wrap(data);
+//                    Y = wrapped.getInt();
+//
+//                    break;
+//                case BLE_TRANSMIT_Z:
+//
+//                    wrapped = ByteBuffer.wrap(data);
+//                    Z = wrapped.getInt();
+//                    break;
+//            }
+//
+//
+//            /*
+//            byte[] arr = { 0x00, 0x01 };
+//            ByteBuffer wrapped = ByteBuffer.wrap(arr); // big-endian by default
+//            short num = wrapped.getShort(); // 1
+//
+//            ByteBuffer dbuf = ByteBuffer.allocate(2);
+//            dbuf.putShort(num);
+//            byte[] bytes = dbuf.array(); // { 0, 1 }
+//             */
+//
+//            String[] entry = String.format(Locale.getDefault(), "%s,%d,%d,%d,%d", date.toString(), X, Y, Z, temperature).split(",");
+//
+////            csvWriterManager.csvWriterOnce(entry);
+////        } catch (IOException ioException) {
+////            ioException.printStackTrace();
+////        } catch (Exception e) {
+////            e.printStackTrace();
+////        }
 
 
     }
@@ -546,5 +590,49 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
         connectButton.setText(R.string.connect);
         Snackbar.make(findViewById(android.R.id.content), "Disconnection triggered", Snackbar.LENGTH_SHORT).show();
         Log.e(TAG, "Disconnection triggered");
+    }
+
+    // FOR SPINNER
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        // An item was selected. You can retrieve the selected item using
+        // parent.getItemAtPosition(pos)
+
+        Log.i(TAG, parent.getItemAtPosition(position).toString());
+//        Log.i(TAG, String.valueOf(id));
+
+        if (id == 0) { // 5 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x00});
+        } else if (id == 1) { // 10 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x01});
+        } else if (id == 2) { // 15 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x02});
+        } else if (id == 3) { // 20 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x03});
+        } else if (id == 4) { // 25 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x04});
+        } else if (id == 5) { // 30 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x05});
+        } else if (id == 6) { // 35 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x06});
+        } else if (id == 7) { // 40 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x07});
+        } else if (id == 8) { // 50 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x08});
+        } else if (id == 9) { // 60 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x09});
+        } else if (id == 10) { // 70 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x0A});
+        } else if (id == 11) { // 80 cm
+            writeToDevice(new byte[]{BLE_ULTRASOUND_CONFIG, 0x00, 0x0B});
+        }
+
+
+//        writeToDevice(new byte[]{0x03, left, right});
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+        // Another interface callback
     }
 }

@@ -7,6 +7,21 @@
     <string name="device_status">Device status</string>
     <string name="connect">Connect</string>
     <string name="disconnected">Disconnected</string>
-    <string name="write">Write</string>
+    <string name="write">Set notification</string>
     <string name="finished">Finished</string>
+
+    <string-array name="ultrasound_distances">
+        <item>5 cm</item>
+        <item>10 cm</item>
+        <item>15 cm</item>
+        <item>20 cm</item>
+        <item>25 cm</item>
+        <item>30 cm</item>
+        <item>35 cm</item>
+        <item>40 cm</item>
+        <item>50 cm</item>
+        <item>60 cm</item>
+        <item>70 cm</item>
+        <item>80 cm</item>
+    </string-array>
 </resources>

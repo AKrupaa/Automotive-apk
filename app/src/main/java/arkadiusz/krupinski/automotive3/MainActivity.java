@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         // you can selectively disable SampleApplication-related features.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
-            finish();
+//            finish();
         } else {
 //            good to know ;)
             Toast.makeText(this, R.string.ble_supported, Toast.LENGTH_SHORT).show();
