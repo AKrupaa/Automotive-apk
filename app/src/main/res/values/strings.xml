@@ -9,7 +9,7 @@
     <string name="disconnected">Disconnect</string>
     <string name="write">Set notification</string>
     <string name="finished">Finished</string>
-    <string name="x_y_z_heading">X, Y, Z, Heading</string>
+    <string name="x_y_z_heading_photofront_photoback_hall">X, Y, Z, Heading, PhotoFront, PhotoBack, Hall</string>
 
     <string-array name="ultrasound_distances">
         <item>5 cm</item>

@@ -3,6 +3,7 @@ package arkadiusz.krupinski.automotive3;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -77,6 +78,7 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     public static final byte BLE_TRANSMIT_ULTRASOUND_VALUE = 0x0A;
     public static final byte BLE_RECEIVED_PHOTOTRANSISTOR_FRONT_VALUE = 0x0B;
     public static final byte BLE_RECEIVED_PHOTOTRANSISTOR_BACK_VALUE = 0x0C;
+    public static final byte BLE_RECEIVED_HALL_FRONT_VALUE = 0x0D;
 
     private UUID serviceDeviceNameUUID;
     private UUID characteristicUuidDeviceName;
@@ -146,6 +148,10 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     @SuppressLint("NonConstantResourceId")
     @BindView(R.id.textPhototransistorBack)
     TextView photoBackTextView;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.hallButton)
+    Button hallButton;
 
     @SuppressLint("NonConstantResourceId")
     @OnClick(R.id.connectButton)
@@ -414,7 +420,7 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     }
 
     private void onNotificationChange(byte[] bytes) {
-        Snackbar.make(findViewById(android.R.id.content), "Notification change: " + HexString.bytesToHex(bytes), Snackbar.LENGTH_SHORT).show();
+//        Snackbar.make(findViewById(android.R.id.content), "Notification change: " + HexString.bytesToHex(bytes), Snackbar.LENGTH_SHORT).show();
         Log.e(TAG, "Given characteristic has been changes, here is the value: " + HexString.bytesToHex(bytes));
 
         double X = 0;
@@ -480,6 +486,19 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
 //                Z = result / 1.0;
                 runOnUiThread(() -> photoBackTextView.setText(String.format(Locale.getDefault(), "%.2f", result / 1.0)));
                 Log.i(TAG, "photo back = " + String.valueOf(result / 1.0));
+            } else if (array[0] == BLE_RECEIVED_HALL_FRONT_VALUE) {
+                ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+                short result = byteBuffer.getShort();
+//                Z = result / 1.0;
+
+                runOnUiThread(() -> {
+                    if (result == 0)
+                        hallButton.setBackgroundColor(Color.GREEN);
+                    else
+                        hallButton.setBackgroundColor(Color.RED);
+
+                });
+                Log.i(TAG, "HALL FRONT VALUE = " + String.valueOf(result / 1.0));
             }
 //
             double finalY = Y;
