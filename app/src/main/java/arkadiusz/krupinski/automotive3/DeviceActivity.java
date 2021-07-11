@@ -75,6 +75,8 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     public static final byte BLE_RECEIVED_ULTRASOUND = 0x08;
     public static final byte BLE_ULTRASOUND_CONFIG = 0x09;
     public static final byte BLE_TRANSMIT_ULTRASOUND_VALUE = 0x0A;
+    public static final byte BLE_RECEIVED_PHOTOTRANSISTOR_FRONT_VALUE = 0x0B;
+    public static final byte BLE_RECEIVED_PHOTOTRANSISTOR_BACK_VALUE = 0x0C;
 
     private UUID serviceDeviceNameUUID;
     private UUID characteristicUuidDeviceName;
@@ -136,6 +138,14 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     @SuppressLint("NonConstantResourceId")
     @BindView(R.id.textViewHeading)
     TextView headingTextView;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.textPhototransistorFront)
+    TextView photoFrontTextView;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.textPhototransistorBack)
+    TextView photoBackTextView;
 
     @SuppressLint("NonConstantResourceId")
     @OnClick(R.id.connectButton)
@@ -458,6 +468,18 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
                 Z = result / 1.0;
                 runOnUiThread(() -> zMagnetometerTextView.setText(String.format(Locale.getDefault(), "%.2f", result / 1.0)));
                 Log.i(TAG, "Z = " + String.valueOf(result / 1.0));
+            } else if (array[0] == BLE_RECEIVED_PHOTOTRANSISTOR_FRONT_VALUE) {
+                ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+                short result = byteBuffer.getShort();
+//                Z = result / 1.0;
+                runOnUiThread(() -> photoFrontTextView.setText(String.format(Locale.getDefault(), "%.2f", result / 1.0)));
+                Log.i(TAG, "photo front = " + String.valueOf(result / 1.0));
+            } else if (array[0] == BLE_RECEIVED_PHOTOTRANSISTOR_BACK_VALUE) {
+                ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+                short result = byteBuffer.getShort();
+//                Z = result / 1.0;
+                runOnUiThread(() -> photoBackTextView.setText(String.format(Locale.getDefault(), "%.2f", result / 1.0)));
+                Log.i(TAG, "photo back = " + String.valueOf(result / 1.0));
             }
 //
             double finalY = Y;
