@@ -45,9 +45,11 @@ public class CSVWriterManager {
         if (!file.exists()) {
 //              if file does not exist, create one
             file.createNewFile();
-            this.path = file.toPath();
+//            this.path = file.toPath();
             Log.i("File created: ", file.getName());
         }
+
+        this.path = file.toPath();
 
     }
 
@@ -59,7 +61,7 @@ public class CSVWriterManager {
 //            return;
 //        }
 
-        CSVWriter writer = new CSVWriter(new FileWriter(this.path.toString()));
+        CSVWriter writer = new CSVWriter(new FileWriter(this.path.toString(), true));
         for (String[] array : stringArray) {
             writer.writeNext(array);
         }
@@ -68,7 +70,7 @@ public class CSVWriterManager {
     }
 
     public void csvWriterOnce(String[] strings) throws Exception {
-        CSVWriter writer = new CSVWriter(new FileWriter(this.path.toString()));
+        CSVWriter writer = new CSVWriter(new FileWriter(this.path.toString(), true));
 //        for (String[] array : stringArray) {
         writer.writeNext(strings);
 //        }

@@ -2,57 +2,35 @@ package arkadiusz.krupinski.automotive3;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.content.Context;
-import android.media.AudioAttributes;
-import android.media.MediaPlayer;
+import android.annotation.SuppressLint;
 import android.net.Uri;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.PowerManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.MediaController;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.VideoView;
 
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.BehindLiveWindowException;
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.source.rtsp.RtspMediaSource;
 import com.google.android.exoplayer2.ui.PlayerView;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
-import com.google.android.exoplayer2.util.Util;
 import com.google.android.material.snackbar.Snackbar;
-import com.jakewharton.rx3.ReplayingShare;
 import com.polidea.rxandroidble2.RxBleConnection;
 import com.polidea.rxandroidble2.RxBleDevice;
-import com.polidea.rxandroidble2.RxBleDeviceServices;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import arkadiusz.krupinski.automotive3.Util.CSVWriterManager;
 import arkadiusz.krupinski.automotive3.Util.EngineValuesPWM;
@@ -61,10 +39,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.github.controlwear.virtual.joystick.android.JoystickView;
-import io.reactivex.Completable;
-import io.reactivex.CompletableObserver;
 import io.reactivex.Observable;
-import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
@@ -88,14 +63,16 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     public static final String UUID_CHARACTERISTIC_WRITE = "00001235-0000-1000-8000-00805F9B34FB";
     public static final String UUID_CHARACTERISTIC_NOTIFY = "00001236-0000-1000-8000-00805F9B34FB";
 
-    public static final byte BLE_RECEIVED_DO_NOTHING = 0x01;
-    public static final byte BLE_RECEIVED_AUTO_MANUAL = 0x02;
-    public static final byte BLE_RECEIVED_MOVEMENT = 0x03;
-    public static final byte BLE_TRANSMIT_TEMPERATURE = 0x04;
-    public static final byte BLE_TRANSMIT_X = 0x05;
-    public static final byte BLE_TRANSMIT_Y = 0x06;
-    public static final byte BLE_TRANSMIT_Z = 0x07;
-    public static final byte BLE_TRANSMIT_ULTRASOUND = 0x08;
+
+    public static final double QMC5883L_SCALE_FACTOR = 0.732421875f;
+    public static final byte BLE_TRANSMIT_DO_NOTHING = 0x01;
+    public static final byte BLE_TRANSMIT_AUTO_MANUAL = 0x02;
+    public static final byte BLE_TRANSMIT_MOVEMENT = 0x03;
+    public static final byte BLE_RECEIVED_TEMPERATURE = 0x04;
+    public static final byte BLE_RECEIVED_X = 0x05;
+    public static final byte BLE_RECEIVED_Y = 0x06;
+    public static final byte BLE_RECEIVED_Z = 0x07;
+    public static final byte BLE_RECEIVED_ULTRASOUND = 0x08;
     public static final byte BLE_ULTRASOUND_CONFIG = 0x09;
     public static final byte BLE_TRANSMIT_ULTRASOUND_VALUE = 0x0A;
 
@@ -116,27 +93,51 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
 
     SimpleExoPlayer player;
 
+    @SuppressLint("NonConstantResourceId")
     @BindView(R.id.connectButton)
     Button connectButton;
 
+    @SuppressLint("NonConstantResourceId")
     @BindView(R.id.writeButton)
     Button writeButton;
 
+    @SuppressLint("NonConstantResourceId")
     @BindView(R.id.deviceStatus)
     TextView deviceStatus;
 
+    @SuppressLint("NonConstantResourceId")
     @BindView(R.id.joystick)
     JoystickView joystickView;
 
+    @SuppressLint("NonConstantResourceId")
     @BindView(R.id.exo_player_view)
     PlayerView playerView;
 
+    @SuppressLint("NonConstantResourceId")
     @BindView(R.id.spinner)
-    Spinner distancesSpiner;
+    Spinner distancesSpinner;
 
+    @SuppressLint("NonConstantResourceId")
     @BindView(R.id.distance_ultrasound)
     TextView distanceTextView;
 
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.textViewX)
+    TextView xMagnetometerTextView;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.textViewY)
+    TextView yMagnetometerTextView;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.textViewZ)
+    TextView zMagnetometerTextView;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.textViewHeading)
+    TextView headingTextView;
+
+    @SuppressLint("NonConstantResourceId")
     @OnClick(R.id.connectButton)
     public void onConnectButtonClick() {
         if (isConnected()) {
@@ -152,6 +153,7 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
                     .subscribe(ssid3Bytes -> {
 //                        System.out.print("This is working");
                         //do something
+                        connectButton.setText(R.string.disconnected);
                         Snackbar.make(findViewById(android.R.id.content), "Connection established!", Snackbar.LENGTH_SHORT).show();
                     }, this::onWriteFailure, this::onWriteSuccess);
 
@@ -261,9 +263,9 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
             List<String[]> strings = new ArrayList<>(0);
             //String[] entries = String.format("%d,%s,%s,%d", scan.getTimestampNanos(), scan.getBleDevice().getMacAddress(), scan.getBleDevice().getName(), scan.getRssi()).split(",");
 
-            String[] columns = String.format("%s,%s,%s,%s", "timestamp", "X", "Y", "Z", "Temperature").split(",");
+            String[] columns = String.format("%s,%s,%s,%s", "timestamp", "X", "Y", "Z", "distance to obstacle").split(",");
             Date currentTime = Calendar.getInstance().getTime();
-            String[] welcome = String.format("%s", "Zapis z dnia: " + currentTime.toString()).split(",");
+            String[] welcome = String.format("%s", "Record of: " + currentTime.toString()).split(",");
 
             strings.add(welcome);
             strings.add(columns);
@@ -276,32 +278,21 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
         }
 
         // create spinner
-
-        distancesSpiner.setOnItemSelectedListener(this);
+        distancesSpinner.setOnItemSelectedListener(this);
         // Create an ArrayAdapter using the string array and a default spinner layout
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.ultrasound_distances, android.R.layout.simple_spinner_item);
         // Specify the layout to use when the list of choices appears
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         // Apply the adapter to the spinner
-        distancesSpiner.setAdapter(adapter);
+        distancesSpinner.setAdapter(adapter);
+        distancesSpinner.setSelection(7); // (id == 7) { // 40 cm
     }
 
 
     public void initializePlayer() {
-        // Global settings.
-//        player =
-//                new SimpleExoPlayer.Builder(this)
-//                        .setMediaSourceFactory(
-//                                new DefaultMediaSourceFactory(this)
-//                                //.setLiveTargetOffsetMs(5000)
-//                        )
-//                        .build();
-//
-//        playerView.setPlayer(player);
-////
+
         Uri uri = Uri.parse("rtsp://192.168.1.1:8554/mjpeg/1");
-////
         // Create a player instance.
         player = new SimpleExoPlayer.Builder(this).build();
 ////         Per MediaItem settings.
@@ -319,69 +310,13 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
 //                new RtspMediaSource.Factory()
 //                        .createMediaSource(MediaItem.fromUri(uri));
 
-
 // Set the media source to be played.
 //        player.setMediaSource(mediaSource);
 // Prepare the player.
         player.prepare();
 
         playerView.setPlayer(player);
-        // --------------------------------------------------------
-
-        // Create a data source factory.
-//        DataSource.Factory dataSourceFactory = new DefaultHttpDataSourceFactory();
-//// Create a progressive media source pointing to a stream uri.
-//        MediaSource mediaSource = new ProgressiveMediaSource.Factory(dataSourceFactory)
-//                .createMediaSource(MediaItem.fromUri(uri));
-//// Create a player instance.
-//        SimpleExoPlayer player = new SimpleExoPlayer.Builder(this).build();
-//// Set the media source to be played.
-//        player.setMediaSource(mediaSource);
-//// Prepare the player.
-//        player.prepare();
-//        playerView.setPlayer(player);
-//        player.setPlayWhenReady(true);
-//        Uri myUri = Uri.parse("http://192.168.4.1/"); // initialize Uri here
-//        String url = "http://192.168.4.1/"; // your URL here
-//        MediaPlayer mediaPlayer = new MediaPlayer();
-//        // ... other initialization here ...
-//        mediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
-//
-//
-//        WifiManager.WifiLock wifiLock = ((WifiManager) getSystemService(Context.WIFI_SERVICE))
-//                .createWifiLock(WifiManager.WIFI_MODE_FULL, "mylock");
-//
-//        wifiLock.acquire();
-//        mediaPlayer.setAudioAttributes(
-//                new AudioAttributes.Builder()
-//                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-//                        .setUsage(AudioAttributes.USAGE_MEDIA)
-//                        .build()
-//        );
-//        try {
-//            mediaPlayer.setDataSource(url);
-//            mediaPlayer.setOnPreparedListener(this::onPrepared);
-//            mediaPlayer.prepareAsync();
-////            mediaPlayer.prepare(); // might take long! (for buffering, etc)
-//        } catch (IOException ioException) {
-//            ioException.printStackTrace();
-//        }
-//        mediaPlayer.start();
-
-//        VideoView videoView = (VideoView)findViewById(R.id.video_view);
-//        MediaController mediaController= new MediaController(this);
-//        mediaController.setAnchorView(videoView);
-//        Uri uri = Uri.parse("http://home/video.mp4");
-//        videoView.setMediaController(mediaController);
-//        videoView.setVideoURI(uri);
-//        videoView.requestFocus();
-//        videoView.start();
-
     }
-
-//    public void onPrepared(MediaPlayer player) {
-//        player.start();
-//    }
 
     @Override
     public void onPlayerError(ExoPlaybackException e) {
@@ -441,7 +376,7 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     private void onConnectionFailure(Throwable throwable) {
         //noinspection ConstantConditions
         Snackbar.make(findViewById(android.R.id.content), "Connection error: " + throwable, Snackbar.LENGTH_SHORT).show();
-        Log.e(TAG, "ERROR", throwable);
+        Log.e(TAG, "ERROR ", throwable);
     }
 
     @SuppressWarnings("unused")
@@ -460,34 +395,105 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     private void onWriteFailure(Throwable throwable) {
         //noinspection ConstantConditions
         Snackbar.make(findViewById(android.R.id.content), "Write error: " + throwable, Snackbar.LENGTH_SHORT).show();
-        Log.e(TAG, "Write error", throwable);
+        Log.e(TAG, "Write error ", throwable);
     }
 
     private void onNotificationSet(String text) {
         Snackbar.make(findViewById(android.R.id.content), "Notification set: " + text, Snackbar.LENGTH_SHORT).show();
-        Log.e(TAG, "Notification has been set:" + text);
+        Log.e(TAG, "Notification has been set: " + text);
     }
 
     private void onNotificationChange(byte[] bytes) {
         Snackbar.make(findViewById(android.R.id.content), "Notification change: " + HexString.bytesToHex(bytes), Snackbar.LENGTH_SHORT).show();
         Log.e(TAG, "Given characteristic has been changes, here is the value: " + HexString.bytesToHex(bytes));
 
-        if (bytes.length < 3) {
+        double X = 0;
+        double Y = 0;
+        double Z = 0;
+        double ultrasound_dist = 0;
 
-            bytes = new byte[]{bytes[0], bytes[1], 0x00};
+        if (bytes.length % 3 != 0)
+            return;
 
-//            bytes[2] = bytes[1];
-//            bytes[1] = 0x00;
+        ArrayList<byte[]> arrayList = new ArrayList<>(0);
+
+        for (int i = 0; i < bytes.length; i += 3) {
+            byte[] resolving = {bytes[i], bytes[i + 1], bytes[i + 2]};
+            arrayList.add(resolving);
         }
 
-        if (bytes[0] == BLE_TRANSMIT_ULTRASOUND_VALUE && bytes.length == 3) {
-            byte[] data = {bytes[2], bytes[1]};
-            String bytesToHex = HexString.bytesToHex(data);
-            int decimal = Integer.parseInt(bytesToHex, 16);
+        for (byte[] array :
+                arrayList) {
+            byte[] data;
+            String bytesToHex;
+            int decimal;
+            if (array.length == 3) {
+                data = new byte[]{array[2], array[1]};
+                bytesToHex = HexString.bytesToHex(data);
+            } else
+                return;
 
+
+            if (array[0] == BLE_TRANSMIT_ULTRASOUND_VALUE) {
+                decimal = Integer.parseInt(bytesToHex, 16);
 //            ((ULTRASOUND_DIST_15CM) / TIMER_10_RESOLUTION * 2)
-            double result = decimal * 0.125 * 0.0344 / 2; // timer result * 2 * timer resolution * speed of sound in cm/us
-            distanceTextView.setText(String.format(Locale.getDefault(), "Distance = %.2f cm", result));
+                double result = (decimal * 0.125 * 0.0344 / 2); // timer result * 2 * timer resolution * speed of sound in cm/us
+                ultrasound_dist = result;
+                runOnUiThread(() -> distanceTextView.setText(String.format(Locale.getDefault(), "Distance = %.2f cm", result)));
+            } else if (array[0] == BLE_RECEIVED_X) {
+                ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+                short result = byteBuffer.getShort();
+                X = result / 1.0;
+                runOnUiThread(() -> xMagnetometerTextView.setText(String.format(Locale.getDefault(), "%.2f", result / 1.0)));
+                Log.i(TAG, "X = " + String.valueOf(result / 1.0));
+            } else if (array[0] == BLE_RECEIVED_Y) {
+                ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+                short result = byteBuffer.getShort();
+                Y = result / 1.0;
+                runOnUiThread(() -> yMagnetometerTextView.setText(String.format(Locale.getDefault(), "%.2f", result / 1.0)));
+                Log.i(TAG, "Y = " + String.valueOf(result / 1.0));
+            } else if (array[0] == BLE_RECEIVED_Z) {
+                ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+                short result = byteBuffer.getShort();
+                Z = result / 1.0;
+                runOnUiThread(() -> zMagnetometerTextView.setText(String.format(Locale.getDefault(), "%.2f", result / 1.0)));
+                Log.i(TAG, "Z = " + String.valueOf(result / 1.0));
+            }
+//
+            double finalY = Y;
+            double finalX = X;
+            double finalZ = Z;
+            double finalUltrasound_dist = ultrasound_dist;
+            runOnUiThread(() -> {
+                try {
+
+//                    double heading = Math.atan2(finalY, finalX);
+
+//                    heading += 93.67 / 1000;  // radian, Tekirdag/Turkey
+                    //WEST
+                    //heading -= 93.67/1000;
+                    double heading = Math.atan2(finalY, finalX) * (180 / Math.PI);
+//                    if (heading < 0) {
+//                        heading += 2 * Math.PI;
+//                    } else if (heading > 2 * Math.PI) {
+//                        heading -= 2 * Math.PI;
+//                    }
+
+//                    double finalHeading = heading;
+                    headingTextView.setText(String.format(Locale.getDefault(), "%.4f", heading));
+//                    String[] columns = String.format("%s,%s,%s,%s", "timestamp", "X", "Y", "Z", "distance to obstacle").split(",");
+                    Date date = new Date(System.currentTimeMillis());
+                    String[] entry = String.format(Locale.getDefault(), "%s'%.2f'%.2f'%.2f'%.2f", date.toString(), finalX, finalY, finalZ, finalUltrasound_dist).split("'");
+                    csvWriterManager.csvWriterOnce(entry);
+
+                } catch (Exception e) {
+                    e.getCause();
+                    e.getLocalizedMessage();
+                    e.getStackTrace();
+                }
+            });
+
+
         }
 
 

@@ -6,9 +6,10 @@
     <string name="stop_scan">Stop scan</string>
     <string name="device_status">Device status</string>
     <string name="connect">Connect</string>
-    <string name="disconnected">Disconnected</string>
+    <string name="disconnected">Disconnect</string>
     <string name="write">Set notification</string>
     <string name="finished">Finished</string>
+    <string name="x_y_z_heading">X, Y, Z, Heading</string>
 
     <string-array name="ultrasound_distances">
         <item>5 cm</item>
