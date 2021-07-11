@@ -45,8 +45,8 @@
 
     <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/exo_player_view"
-        android:layout_width="413dp"
-        android:layout_height="234dp"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
         android:layout_marginTop="144dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -212,5 +212,16 @@
         android:paddingBottom="20dp"
         app:layout_constraintLeft_toLeftOf="@id/textPhototransistorBack"
         app:layout_constraintTop_toTopOf="@id/textPhototransistorBack" />
+
+    <WebView
+        android:id="@+id/webview"
+        android:layout_width="640px"
+        android:layout_height="512px"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.32" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

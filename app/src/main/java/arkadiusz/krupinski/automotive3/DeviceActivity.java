@@ -3,11 +3,21 @@ package arkadiusz.krupinski.automotive3;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
+import android.view.WindowManager;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -50,7 +60,8 @@ import io.reactivex.subjects.PublishSubject;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
 
-public class DeviceActivity extends AppCompatActivity implements Player.EventListener, AdapterView.OnItemSelectedListener {
+
+public class DeviceActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
     private static final String TAG = "DeviceActivity";
 
     public static final String LOG_FILENAME = "logs";
@@ -94,6 +105,8 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     private RxBleConnection rxBleConnection;
 
     private CSVWriterManager csvWriterManager;
+
+    Date startDate;
 
     SimpleExoPlayer player;
 
@@ -171,6 +184,7 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
                         //do something
                         connectButton.setText(R.string.disconnected);
                         Snackbar.make(findViewById(android.R.id.content), "Connection established!", Snackbar.LENGTH_SHORT).show();
+                        startDate = new Date(System.currentTimeMillis());
                     }, this::onWriteFailure, this::onWriteSuccess);
 
             compositeDisposable.add(subscribe);
@@ -178,6 +192,7 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     }
 
 
+    @SuppressLint("NonConstantResourceId")
     @OnClick(R.id.writeButton)
     public void onWriteButtonClick() {
 
@@ -214,6 +229,69 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
                     );
 
             compositeDisposable.add(subscribe1);
+        }
+    }
+
+    @SuppressLint("NonConstantResourceId")
+    @OnClick(R.id.hallButton)
+    public void onHallButtonClick() {
+        hallButton.setBackgroundColor(Color.GREEN);
+
+        Date currentDate = new Date(System.currentTimeMillis());
+
+//        Date diff = currentDate - startDate;
+        long difference_In_Time
+                = currentDate.getTime() - startDate.getTime();
+
+        // Calucalte time difference in
+        // seconds, minutes, hours, years,
+        // and days
+        long difference_In_Seconds
+                = (difference_In_Time
+                / 1000)
+                % 60;
+
+        long difference_In_Minutes
+                = (difference_In_Time
+                / (1000 * 60))
+                % 60;
+
+        long difference_In_Hours
+                = (difference_In_Time
+                / (1000 * 60 * 60))
+                % 24;
+
+        long difference_In_Years
+                = (difference_In_Time
+                / (1000l * 60 * 60 * 24 * 365));
+
+        long difference_In_Days
+                = (difference_In_Time
+                / (1000 * 60 * 60 * 24))
+                % 365;
+
+        // Print the date difference in
+        // years, in days, in hours, in
+        // minutes, and in seconds
+
+        String result =
+                difference_In_Years
+                        + " years, "
+                        + difference_In_Days
+                        + " days, "
+                        + difference_In_Hours
+                        + " hours, "
+                        + difference_In_Minutes
+                        + " minutes, "
+                        + difference_In_Seconds
+                        + " seconds";
+
+        String[] entry = String.format(Locale.getDefault(), "%s'%s", "The travel time of the vehicle was: ", result).split("'");
+
+        try {
+            csvWriterManager.csvWriterOnce(entry);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -279,7 +357,9 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
             List<String[]> strings = new ArrayList<>(0);
             //String[] entries = String.format("%d,%s,%s,%d", scan.getTimestampNanos(), scan.getBleDevice().getMacAddress(), scan.getBleDevice().getName(), scan.getRssi()).split(",");
 
-            String[] columns = String.format("%s,%s,%s,%s", "timestamp", "X", "Y", "Z", "distance to obstacle").split(",");
+            String[] columns = String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s", "timestamp", "X", "Y", "Z",
+                    "distance to obstacle", "heading", "photo-transistor front", "photo-transistor back",
+                    "finish line").split(",");
             Date currentTime = Calendar.getInstance().getTime();
             String[] welcome = String.format("%s", "Record of: " + currentTime.toString()).split(",");
 
@@ -303,7 +383,36 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
         // Apply the adapter to the spinner
         distancesSpinner.setAdapter(adapter);
         distancesSpinner.setSelection(7); // (id == 7) { // 40 cm
+
+
+        // WebContent
+
+        WebView myWebView = (WebView) findViewById(R.id.webview);
+//        setContentView(myWebView);
+//        myWebView.loadUrl("http://192.168.1.1/");
+//
+        myWebView.getSettings().setLoadsImagesAutomatically(true);
+//        myWebView.getSettings().setJavaScriptEnabled(true);
+        myWebView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+//        myWebView.setWebViewClient(new WebViewClient());
+        myWebView.setWebViewClient(new MyWebViewClient());
+        int scale = 80;
+        myWebView.setInitialScale(scale);
+//        myWebView.getLayoutParams().height = scale * 800;
+//        myWebView.getLayoutParams().width = scale * 600;
+//        myWebView.requestLayout();
+        myWebView.loadUrl("http://192.168.1.1/");
+//        myWebView.loadUrl("https://www.google.com/");
+//        myWebView.
     }
+
+//    private int getScale(){
+//        Display display = ((WindowManager) getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+//        int width = display.getWidth();
+//        Double val = new Double(width)/new Double(PIC_WIDTH);
+//        val = val * 100d;
+//        return val.intValue();
+//    }
 
 
     public void initializePlayer() {
@@ -334,18 +443,18 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
         playerView.setPlayer(player);
     }
 
-    @Override
-    public void onPlayerError(ExoPlaybackException e) {
-        if (isBehindLiveWindow(e)) {
-            // Re-initialize player at the current live window default position.
-            player.seekToDefaultPosition();
-            player.prepare();
-            Log.e(TAG, "onPlayerError");
-        } else {
-            // Handle other errors.
-            Log.e(TAG, "onPlayerError (else)");
-        }
-    }
+//    @Override
+//    public void onPlayerError(ExoPlaybackException e) {
+//        if (isBehindLiveWindow(e)) {
+//            // Re-initialize player at the current live window default position.
+//            player.seekToDefaultPosition();
+//            player.prepare();
+//            Log.e(TAG, "onPlayerError");
+//        } else {
+//            // Handle other errors.
+//            Log.e(TAG, "onPlayerError (else)");
+//        }
+//    }
 
     private static boolean isBehindLiveWindow(ExoPlaybackException e) {
         if (e.type != ExoPlaybackException.TYPE_SOURCE) {
@@ -427,6 +536,10 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
         double Y = 0;
         double Z = 0;
         double ultrasound_dist = 0;
+//        double heading = 0;
+        double photoFront = 0;
+        double photoBack = 0;
+        String hallState = "unknown";
 
         if (bytes.length % 3 != 0)
             return;
@@ -477,23 +590,30 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
             } else if (array[0] == BLE_RECEIVED_PHOTOTRANSISTOR_FRONT_VALUE) {
                 ByteBuffer byteBuffer = ByteBuffer.wrap(data);
                 short result = byteBuffer.getShort();
+                photoFront = result;
 //                Z = result / 1.0;
                 runOnUiThread(() -> photoFrontTextView.setText(String.format(Locale.getDefault(), "%.2f", result / 1.0)));
                 Log.i(TAG, "photo front = " + String.valueOf(result / 1.0));
             } else if (array[0] == BLE_RECEIVED_PHOTOTRANSISTOR_BACK_VALUE) {
                 ByteBuffer byteBuffer = ByteBuffer.wrap(data);
                 short result = byteBuffer.getShort();
+                photoBack = result;
 //                Z = result / 1.0;
                 runOnUiThread(() -> photoBackTextView.setText(String.format(Locale.getDefault(), "%.2f", result / 1.0)));
                 Log.i(TAG, "photo back = " + String.valueOf(result / 1.0));
             } else if (array[0] == BLE_RECEIVED_HALL_FRONT_VALUE) {
                 ByteBuffer byteBuffer = ByteBuffer.wrap(data);
                 short result = byteBuffer.getShort();
-//                Z = result / 1.0;
-
+                if (result > 0) { //  RED
+                    hallState = "DETECTED";
+                } else {           //  GREEN
+                    hallState = "not detected";
+                }
                 runOnUiThread(() -> {
                     if (result == 0)
-                        hallButton.setBackgroundColor(Color.GREEN);
+                        ;
+//                        ;
+//                        hallButton.setBackgroundColor(Color.GREEN);
                     else
                         hallButton.setBackgroundColor(Color.RED);
 
@@ -505,6 +625,9 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
             double finalX = X;
             double finalZ = Z;
             double finalUltrasound_dist = ultrasound_dist;
+            double finalPhotoFront = photoFront;
+            double finalPhotoBack = photoBack;
+            String finalHallState = hallState;
             runOnUiThread(() -> {
                 try {
 
@@ -522,9 +645,23 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
 
 //                    double finalHeading = heading;
                     headingTextView.setText(String.format(Locale.getDefault(), "%.4f", heading));
-//                    String[] columns = String.format("%s,%s,%s,%s", "timestamp", "X", "Y", "Z", "distance to obstacle").split(",");
+//                    String[] columns = String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s", "timestamp", "X", "Y", "Z",
+//                    "distance to obstacle", "heading", "photo-transistor front", "photo-transistor back",
+//                    "hall state")
                     Date date = new Date(System.currentTimeMillis());
-                    String[] entry = String.format(Locale.getDefault(), "%s'%.2f'%.2f'%.2f'%.2f", date.toString(), finalX, finalY, finalZ, finalUltrasound_dist).split("'");
+                    String[] entry = String.format(Locale.getDefault(),
+                            "%s'" + // date
+                                    "%.2f'" + // X
+                                    "%.2f'" + // Y
+                                    "%.2f'" + // Z
+                                    "%.2f'" + // dist
+                                    "%.2f'" +// heading
+                                    "%.2f'" + // photo front
+                                    "%.2f'" + // photo back
+                                    "%s'", // hall state
+                            date.toString(), finalX, finalY, finalZ,
+                            finalUltrasound_dist, heading, finalPhotoFront, finalPhotoBack,
+                            finalHallState).split("'");
                     csvWriterManager.csvWriterOnce(entry);
 
                 } catch (Exception e) {
@@ -533,83 +670,7 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
                     e.getStackTrace();
                 }
             });
-
-
         }
-
-
-//        //TODO: przetestować reagowanie na przysylane dane...
-//
-//
-//        // WRITE TO CSV file
-////        try {
-////            csvWriterManager.createFile(LOG_FILENAME);
-//            Date date = new Date(System.currentTimeMillis());
-//
-////            String[] columns = String.format("%s,%s,%s,%s", "timestamp", "X", "Y", "Z", "Temperature").split(",");
-//
-//            Integer X = null, Y = null, Z = null, temperature = null;
-//
-//            byte[] data = {bytes[1], bytes[2]};
-//            ByteBuffer wrapped;
-//            boolean isNegative = false;
-//
-//            switch (bytes[0]) {
-//                case BLE_TRANSMIT_TEMPERATURE:
-//
-//                    // 12bit ADC
-//                    if (((bytes[1] & 0xFF) & (1 << 4)) == (1 << 4)) {
-//                        isNegative = true;
-//                    }
-//
-//                    wrapped = ByteBuffer.wrap(data);
-//                    temperature = wrapped.getInt();
-//                    temperature /= 2 ^ 12 - 1; // resolution 12 bit ADC (STM32L162RDTX)
-//
-//                    if (isNegative)
-//                        temperature -= 2 ^ 12 - 1; // this is used for coverting U2 to INT (not tested yet)
-//
-//                    break;
-//                case BLE_TRANSMIT_X:
-//
-//                    wrapped = ByteBuffer.wrap(data);
-//                    X = wrapped.getInt();
-//
-//                    break;
-//                case BLE_TRANSMIT_Y:
-//
-//                    wrapped = ByteBuffer.wrap(data);
-//                    Y = wrapped.getInt();
-//
-//                    break;
-//                case BLE_TRANSMIT_Z:
-//
-//                    wrapped = ByteBuffer.wrap(data);
-//                    Z = wrapped.getInt();
-//                    break;
-//            }
-//
-//
-//            /*
-//            byte[] arr = { 0x00, 0x01 };
-//            ByteBuffer wrapped = ByteBuffer.wrap(arr); // big-endian by default
-//            short num = wrapped.getShort(); // 1
-//
-//            ByteBuffer dbuf = ByteBuffer.allocate(2);
-//            dbuf.putShort(num);
-//            byte[] bytes = dbuf.array(); // { 0, 1 }
-//             */
-//
-//            String[] entry = String.format(Locale.getDefault(), "%s,%d,%d,%d,%d", date.toString(), X, Y, Z, temperature).split(",");
-//
-////            csvWriterManager.csvWriterOnce(entry);
-////        } catch (IOException ioException) {
-////            ioException.printStackTrace();
-////        } catch (Exception e) {
-////            e.printStackTrace();
-////        }
-
-
     }
 
     private void onNotificationFailure(Throwable throwable) {
@@ -681,5 +742,26 @@ public class DeviceActivity extends AppCompatActivity implements Player.EventLis
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
         // Another interface callback
+    }
+}
+
+class MyWebViewClient extends WebViewClient {
+    public MyWebViewClient() {
+        super();
+    }
+
+    @Override
+    public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+        super.onReceivedHttpError(view, request, errorResponse);
+
+        view.reload();
+    }
+
+
+    @Override
+    public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+        super.onReceivedError(view, request, error);
+
+        view.reload();
     }
 }

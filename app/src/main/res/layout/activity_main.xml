@@ -25,8 +25,10 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/scan_results"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="370dp"
+        android:layout_height="622dp"
+        android:minWidth="370dp"
+        android:minHeight="622dp"
         android:paddingLeft="10dp"
         android:paddingBottom="10dp"
         android:scrollbars="vertical"
