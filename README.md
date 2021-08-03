@@ -1,2 +1,2 @@
 # Automotive-apk
-![](demo.png)
+![](/images/demo.png)
