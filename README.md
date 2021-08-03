@@ -1,6 +1,6 @@
 # Automotive-apk
 ## Student project
-## [Complementary project](https://github.com/AKrupaa/automotive-stm32)
+### [Complementary project](https://github.com/AKrupaa/automotive-stm32)
 
 ### Preview
 ![](/images/demo.png)   ![](/images/car-demo.png) <br>
