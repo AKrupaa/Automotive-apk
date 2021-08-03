@@ -3,8 +3,8 @@
 
 ### Preview
 ![](/images/demo.png)
-![Youtube sample 1](https://youtu.be/acJ9b4zpFhg)
-![Youtube sample 2](https://youtu.be/u2U2tENVD00)
+[Youtube sample 1](https://youtu.be/acJ9b4zpFhg)
+[Youtube sample 2](https://youtu.be/u2U2tENVD00)
 
 ## Usage
 Allows to communicate via BLE with STM32 device to control the movement and logging most of the data to file
