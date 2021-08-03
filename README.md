@@ -1,2 +1,2 @@
 # Automotive-apk
-![Demo](demo.png)
+![Demo](demo.png  | width=100)
