@@ -40,5 +40,5 @@ Design assumptions:
 
 ## What did I use?
 
-[RxAndroidBle](https://github.com/Polidea/RxAndroidBle) - for establishing BLE communication
+[RxAndroidBle](https://github.com/Polidea/RxAndroidBle) - for establishing BLE communication<br>
 [Developer Guides | Android](https://developer.android.com/guide/) - for building the app
