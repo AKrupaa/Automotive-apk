@@ -2,7 +2,7 @@
 ## Student project
 
 ### Preview
-![](/images/demo.png) | ![](/images/car-demo.png)
+![](/images/demo.png) <br> ![](/images/car-demo.png) <br>
 [Youtube sample 1](https://youtu.be/acJ9b4zpFhg)
 [Youtube sample 2](https://youtu.be/u2U2tENVD00)
 
