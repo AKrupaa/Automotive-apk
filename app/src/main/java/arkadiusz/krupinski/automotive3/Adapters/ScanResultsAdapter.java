@@ -131,12 +131,12 @@ public class ScanResultsAdapter extends RecyclerView.Adapter<ScanResultsAdapter.
         notifyDataSetChanged();
     }
 
-    // allows clicks events to be caught
+    /** allows clicks events to be caught */
     public void setClickListener(ItemClickListener itemClickListener) {
         this.mClickListener = itemClickListener;
     }
 
-    // parent activity will implement this method to respond to click events
+    /** parent activity will implement this method to respond to click events */
     public interface ItemClickListener {
         void onItemClick(View view, int position, ScanResult scanResult);
     }

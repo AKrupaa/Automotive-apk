@@ -11,7 +11,7 @@ public class EngineValuesPWM {
     private double nMotMixR;           // Motor (right) mixed output           (-128..+127)
 
 
-    private double fPivYLimit = 50.0;
+    private final double fPivYLimit = 50.0;
 
     // TEMP VARIABLES
     private double nMotPremixL;    // Motor (left)  premixed output        (-128..+127)
@@ -25,7 +25,9 @@ public class EngineValuesPWM {
     }
 
 
-    // Calculate Drive Turn output due to Joystick X input
+    /**
+     * Calculate Drive Turn output due to Joystick X input
+     */
     public void calulcate() {
         if (nJoyY >= 0) {
             // Forward
